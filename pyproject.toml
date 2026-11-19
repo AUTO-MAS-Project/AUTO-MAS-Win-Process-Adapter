@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auto-mas-win-process-adapter"
+version = "0.1.0"
+description = "Windows game process adapter"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.12,<3.13"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "AUTO-MAS Team" }]
+keywords = ["auto-mas-plugin", "auto-mas-id:win_process_adapter"]
+dependencies = ["auto-mas-core>=5.9.0b1,<6"]
+
+[project.urls]
+Homepage = "https://github.com/AUTO-MAS-Project/AUTO-MAS-Win-Process-Adapter"
+Repository = "https://github.com/AUTO-MAS-Project/AUTO-MAS-Win-Process-Adapter"
+Documentation = "https://github.com/AUTO-MAS-Project/AUTO-MAS-Win-Process-Adapter/blob/master/README.md"
+Issues = "https://github.com/AUTO-MAS-Project/AUTO-MAS-Win-Process-Adapter/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+win_process_adapter = ["py.typed", "i18n/*.json"]
