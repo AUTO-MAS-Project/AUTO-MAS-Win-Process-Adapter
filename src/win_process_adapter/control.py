@@ -12,7 +12,7 @@ from uuid import UUID, uuid5
 
 import psutil
 from auto_mas_core import ClientControl, DeviceStatus, DeviceSubscribeError, LockTicket
-from auto_mas_core.utils import ProcessInfo, ProcessManager, file_lock
+from auto_mas_core.utils import ProcessInfo, ProcessManager, file_lock, process
 
 from .schema import WinProcessDevice, WinProcessGame
 
@@ -24,9 +24,18 @@ class WinProcessControl(ClientControl[WinProcessGame, WinProcessDevice]):
 
     def __init__(self, config: WinProcessGame | None = None) -> None:
         super().__init__(config=config)
-        self._process = ProcessManager()
+        self._processes: dict[int | None, ProcessManager] = {}
         self._operation = asyncio.Lock()
         self._resource_file: BinaryIO | None = None
+
+    @property
+    def _process(self) -> ProcessManager:
+        # 支持尚未提供桌面分身会话接口的 SDK。
+        scope = getattr(process, "desktop_process_session_id", None)
+        session_id = scope() if scope is not None else None
+        if session_id not in self._processes:
+            self._processes[session_id] = ProcessManager()
+        return self._processes[session_id]
 
     @property
     def busy(self) -> bool:
@@ -58,9 +67,10 @@ class WinProcessControl(ClientControl[WinProcessGame, WinProcessDevice]):
             path = os.path.normcase(str(entry.executable.resolve()))
 
             def matching_pids() -> list[int]:
+                scan = getattr(process, "iter_processes", psutil.process_iter)
                 return [
                     proc.pid
-                    for proc in psutil.process_iter(["exe"])
+                    for proc in scan(["exe"])
                     if proc.info["exe"]
                     and os.path.normcase(str(Path(proc.info["exe"]).resolve())) == path
                 ]
@@ -243,7 +253,14 @@ class WinProcessControl(ClientControl[WinProcessGame, WinProcessDevice]):
         self._check_device(device_uid, ticket)
         async with self.operation_scope(self._operation):
             await self._refresh()
-            hwnd = self._process.main_hwnd
+            manager = self._process
+            maximize = getattr(manager, "maximize_window", None)
+            if maximize is not None:
+                if not await maximize():
+                    raise RuntimeError("游戏窗口不可用或最大化失败")
+                return
+            # 旧 SDK 只支持通过主会话的窗口句柄操作。
+            hwnd = manager.main_hwnd
             if hwnd is None:
                 raise RuntimeError("游戏窗口不可用")
             import win32con
@@ -256,7 +273,9 @@ class WinProcessControl(ClientControl[WinProcessGame, WinProcessDevice]):
     async def teardown(self) -> None:
         """解除进程观察，显式关闭由设备操作入口负责。"""
         async with self.operation_scope(self._operation):
-            await self._process.clear()
+            for manager in self._processes.values():
+                await manager.clear()
+            self._processes.clear()
 
 
 async def search_installed() -> list[WinProcessGame]:

@@ -38,6 +38,7 @@
 发行包为 `auto-mas-win-process-adapter`，插件 ID 为 `win_process_adapter`。
 适用于 Python 3.12 和已接入游戏适配插件的 AUTO-MAS 宿主，要求 `auto-mas-core>=5.9.0b1,<6`。
 通过插件市场安装时由宿主提供 core，独立安装时需要提供兼容的 SDK wheel。
+支持会话范围的宿主可通过 `win_process.desktop_scope` 确认适配已具备子会话进程跟踪能力。
 
 首次发布前，在 [PyPI 账户的 Publishing 页面](https://pypi.org/manage/account/publishing/) 登记待定发布者。
 项目名填 `auto-mas-win-process-adapter`，仓库所有者填 `AUTO-MAS-Project`，仓库名填 `AUTO-MAS-Win-Process-Adapter`，工作流文件名填 `publish.yml`，环境名填 `pypi`。
